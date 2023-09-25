@@ -24,6 +24,12 @@ function love.load()
 
     love.graphics.setFont(smallFont)
 
+    sounds={
+        ['paddle_hit']=love.audio.newSource('sounds/paddle_hit.wav','static'),
+        ['score']=love.audio.newSource('sounds/score.wav','static'),
+        ['wall_hit']=love.audio.newSource('sounds/wall_hit.wav','static')
+    }
+
     push:setupScreen(VIRTUAL_WIDTH,VIRTUAL_HEIGHT,WINDOW_WIDTH,WINDOW_HEIGHT,{
         fullscreen=false,
         resizable=false,
@@ -44,10 +50,20 @@ end
 
 
 function love.update(dt)
+    
+    if tostring(player1Score)=='5' or tostring(player2Score)=='5' then
+        gameState='end'
+    end
+
+    if gameState =='serve' then
+        ball:reset()
+    end
+
+
     if gameState=='play' then
 
         if ball:collides(player1) then
-            ball.dx=-ball.dx*1.5
+            ball.dx=-ball.dx*1.05
             
 
 
@@ -56,9 +72,10 @@ function love.update(dt)
             else
                 ball.dy=math.random(10,150)
             end
+            sounds['paddle_hit']:play()
         end
         if ball:collides(player2) then
-            ball.dx=-ball.dx*1.5
+            ball.dx=-ball.dx*1.05
             
 
 
@@ -67,16 +84,33 @@ function love.update(dt)
             else
                 ball.dy=math.random(10,150)
             end
+            sounds['paddle_hit']:play()
         end
 
         if ball.y<=0 then
             ball.y=0
             ball.dy=-ball.dy
+            sounds['wall_hit']:play()
         end
 
         if ball.y>=VIRTUAL_HEIGHT-4 then
             ball.y=VIRTUAL_HEIGHT-4
             ball.dy=-ball.dy
+            sounds['wall_hit']:play()
+        end
+
+        if ball.x>VIRTUAL_WIDTH then
+            player1Score=player1Score+1
+            sounds['score']:play()
+            ball:reset()
+            gameState='serve'
+        end
+
+        if ball.x<0 then
+            player2Score=player2Score+1
+            sounds['score']:play()
+            ball:reset()
+            gameState='serve'
         end
 
         if love.keyboard.isDown('w') then
@@ -113,9 +147,16 @@ function love.keypressed(key)
 
     elseif key=='enter' or key =='return' then
         if gameState=='start' then
+            gameState='serve'
+        elseif gameState=='serve' then
             gameState='play'
+        elseif gameState=='end' then
+            gameState='serve'
+            ball:reset()
+            player1Score=0
+            player2Score=0
         else
-            gameState='start'
+            gameState='serve'
 
             ball:reset()
         end
@@ -135,14 +176,39 @@ function love.draw()
         20,
         VIRTUAL_WIDTH,
         'center')
+        love.graphics.setFont(scoreFont)
         love.graphics.print(tostring(player1Score), VIRTUAL_WIDTH / 2 - 50, 
+    VIRTUAL_HEIGHT / 3)
+    love.graphics.print(tostring(player2Score), VIRTUAL_WIDTH / 2 + 30,
     VIRTUAL_HEIGHT / 3)
     
     
     end
-    love.graphics.print(tostring(player1Score), VIRTUAL_WIDTH / 2 - 50, 
+    
+    if gameState=='serve' then
+        love.graphics.printf('Serve',0,20,VIRTUAL_WIDTH,'center')
+        love.graphics.setFont(scoreFont)
+        love.graphics.print(tostring(player1Score), VIRTUAL_WIDTH / 2 - 50, 
     VIRTUAL_HEIGHT / 3)
+    love.graphics.print(tostring(player2Score), VIRTUAL_WIDTH / 2 + 30,
+    VIRTUAL_HEIGHT / 3)
+    end
 
+    if gameState=='end' then
+        if tostring(player1Score)=='5' then
+            
+            love.graphics.printf("P1 Won",0,20,VIRTUAL_WIDTH,'center')
+        elseif tostring(player2Score)=='5' then
+            love.graphics.printf("P2 Won",0,20,VIRTUAL_WIDTH,'center')
+        end
+        love.graphics.printf("Press Enter to restart",0,40,VIRTUAL_WIDTH,'center')
+        love.graphics.setFont(scoreFont)
+        love.graphics.setFont(scoreFont)
+        love.graphics.print(tostring(player1Score), VIRTUAL_WIDTH / 2 - 50, 
+    VIRTUAL_HEIGHT / 3)
+    love.graphics.print(tostring(player2Score), VIRTUAL_WIDTH / 2 + 30,
+    VIRTUAL_HEIGHT / 3)
+    end
     
     player1:render()
     player2:render()
